@@ -88,7 +88,7 @@ public:
      */
     const Subschema * createSubschema()
     {
-        Subschema *subschema = newSubschema();
+        Subschema *subschema = new Subschema();
 
         try {
             if (!subschemaSet.insert(subschema).second) {
@@ -98,7 +98,7 @@ public:
         } catch (...) {
             subschema->~Subschema();
             freeFn(subschema);
-            throw;
+            //throw;
         }
 
         return subschema;
@@ -177,7 +177,7 @@ private:
             return new (ptr) Subschema();
         } catch (...) {
             freeFn(ptr);
-            throw;
+            //throw;
         }
     }
 
