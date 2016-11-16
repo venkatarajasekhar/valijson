@@ -88,9 +88,9 @@ using valijson::constraints::TypeConstraint;
 void addPropertiesConstraint(Schema &schema)
 {
 
+    try{
     PropertiesConstraint propertiesConstraint;
-
-    {
+  
         // Prepare an enum constraint requires a document to be equal to at
         // least one of a set of possible values
         EnumConstraint constraint;
@@ -105,9 +105,11 @@ void addPropertiesConstraint(Schema &schema)
 
         // Include subschema in properties constraint
         propertiesConstraint.addPropertySubschema("category", subschema);
-    }
+    }catch (...) {
+            subschema->~Subschema();                       
+        }
 
-    {
+    try{
         // Create a child schema for the 'description' property that requires
         // a string, but does not enforce any length constraints.
         const Subschema *subschema = schema.createSubschema();
@@ -117,9 +119,14 @@ void addPropertiesConstraint(Schema &schema)
 
         // Include subschema in properties constraint
         propertiesConstraint.addPropertySubschema("description", subschema);
-    }
+    }catch (...) {
+               typeConstraint.~TypeConstraint();
+               subschema->~Subschema();
+               schema.~Schema();
+               propertiesConstraint.~propertiesConstraint();
+        }
 
-    {
+    try{
         // Create a child schema for the 'price' property, that requires a
         // number with a value greater than zero.
         const Subschema *subschema = schema.createSubschema();
@@ -133,9 +140,15 @@ void addPropertiesConstraint(Schema &schema)
 
         // Include subschema in properties constraint
         propertiesConstraint.addPropertySubschema("price", subschema);
-    }
+    }catch (...) {
+               minimumConstraint.~MinimumConstraint();
+               typeConstraint.~TypeConstraint();
+               subschema->~Subschema();
+               schema.~Schema();
+               propertiesConstraint.~propertiesConstraint();     
+        }
 
-    {
+    try{
         // Create a child schema for the 'title' property that requires a string
         // that is between 1 and 200 characters in length.
         const Subschema *subschema = schema.createSubschema();
@@ -151,7 +164,15 @@ void addPropertiesConstraint(Schema &schema)
 
         // Include subschema in properties constraint
         propertiesConstraint.addPropertySubschema("title", subschema);
-    }
+    }catch (...) {
+               minimumConstraint.~MinimumConstraint();
+               maxLengthConstraint.~MaxLengthConstraint();
+               minLengthConstraint.~MinLengthConstraint();
+               typeConstraint.~TypeConstraint();
+               subschema->~Subschema();
+               schema.~Schema();
+               propertiesConstraint.~propertiesConstraint();        
+        }
 
     // Add a PropertiesConstraint to the root schema
     schema.addConstraint(propertiesConstraint);
@@ -161,20 +182,32 @@ void addRequiredConstraint(Schema &schema)
 {
     // Add a RequiredConstraint to the schema, specifying that the category,
     // price, and title properties must be present.
+    try{
     RequiredConstraint constraint;
     constraint.addRequiredProperty("category");
     constraint.addRequiredProperty("price");
     constraint.addRequiredProperty("title");
     schema.addConstraint(constraint);
+    }catch (...) {
+            schema->~schema();
+            freeFn(schema);     
+        }
 }
 
 void addTypeConstraint(Schema &schema)
 {
     // Add a TypeConstraint to the schema, specifying that the root of the
     // document must be an object.
+    try{
     TypeConstraint typeConstraint;
     typeConstraint.addNamedType(TypeConstraint::kObject);
     schema.addConstraint(typeConstraint);
+    }catch (...) {
+            typeConstraint->~typeConstraint;
+            freeFn(typeConstraint);
+            schema->~schema();
+            freeFn(schema);     
+        }
 }
 
 int main(int argc, char *argv[])
